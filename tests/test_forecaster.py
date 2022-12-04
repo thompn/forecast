@@ -8,16 +8,16 @@ import pandas as pd
 from prophet import Prophet
 from datetime import datetime as dt
 
-#assign today's date to a variable
-tddt = dt.strftime(dt.today(), '%Y-%m-%d')
 
 class TestForecaster(unittest.TestCase):
 
+
     def setUp(self):
-        self.filename = '../calls.csv'
-        self.date_column = 'date'
-        self.column_to_predict = 'total_inbound_calls'
+        self.filename = sys.argv[1]
+        self.date_column = sys.argv[2]
+        self.column_to_predict = sys.argv[3]
         self.forecaster = Forecaster(self.filename, self.date_column, self.column_to_predict)
+        self.tddt = dt.strftime(dt.today(), '%Y-%m-%d')      
 
     def test_read_file(self):
         df = self.forecaster.read_file()
@@ -92,7 +92,7 @@ class TestForecaster(unittest.TestCase):
         forecast = self.forecaster.predict_model(model)
         forecast_ready = self.forecaster.format_forecast_output(forecast)
         self.forecaster.save_forecast_output(forecast_ready)
-        self.assertTrue(os.path.exists(f'forecast_output_{tddt}'))
+        self.assertTrue(os.path.exists(f'forecast_output_{self.tddt}'))
 
     def test_save_plots(self):
         df = self.forecaster.read_file()
@@ -103,7 +103,7 @@ class TestForecaster(unittest.TestCase):
         residuals = self.forecaster.calculate_residuals(df_combined)
         forecast_ready = self.forecaster.format_forecast_output(forecast)
         self.forecaster.save_plots(model, forecast, forecast_ready, residuals)
-        self.assertTrue(os.path.exists(f'forecast_{tddt}_plots.pdf'))
+        self.assertTrue(os.path.exists(f'forecast_{self.tddt}_plots.pdf'))
 
 if __name__ == '__main__':
     unittest.main()
