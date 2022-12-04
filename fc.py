@@ -68,7 +68,7 @@ to_save = forecast[['ds','yhat']]
 to_save.columns = ['date','forecast_value']
 
 # start forecast output from tomorrow
-forecast_ready = to_save[to_save['ds'] > tddt]
+forecast_ready = to_save[to_save['date'] > tddt]
 
 # save forecast output to csv file
 forecast_ready.to_csv(f'forecast_output_{tddt}.csv')
