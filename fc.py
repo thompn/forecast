@@ -36,7 +36,7 @@ df['date'] = pd.to_datetime(df['date'])
 # group by the date, to aggregate daily
 # and sum the total volumes to get a daily aggregated
 # call volume, ignoring the country split
-df = df.groupby(args.date).agg({args.column_to_predict:'sum'}).reset_index()
+df = df.groupby(args.date_column).agg({args.column_to_predict:'sum'}).reset_index()
 
 # rename the columns to be accepted by prophet
 df.columns = ['ds','y']
@@ -99,7 +99,7 @@ with PdfPages(f'forecast_{tddt}_plots.pdf') as pdf:
     plt.close()
     
     fig, ax = plt.subplots(figsize=(18,8))
-    ax.plot(forecast_ready['ds'], forecast_ready['yhat'])
+    ax.plot(forecast_ready['date'], forecast_ready['forecast_value'])
     plt.xlabel('Date', fontsize=14)
     plt.ylabel('Forecasted Volume', fontsize=14)
     plt.title('Aggregated Forecasted Volume', fontsize=16)
