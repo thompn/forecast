@@ -32,11 +32,15 @@ __Now you're ready to run, use the following command to run the forecast:__
 
 `python fc.py filename.csv date_column column_to_predict`
 
-where `filename.csv` is the path to the csv file containing the data to be used to make the forecast, `date_column` is the name of the date column in your input data, and `column_to_predict` is the name of the column containing the values you wish to predict.
+Where `filename.csv` is the path to the csv file containing the data to be used to make the forecast, `date_column` is the name of the date column in your input data, and `column_to_predict` is the name of the column containing the values you wish to predict.
 
 For example if your csv file is called `sales.csv` and has the columns `date` and `sales_volume` then you would run as: 
 
 `python fc.py sales.csv date sales_volume`
+
+Alternatively, you can run it more verbosely as follows:
+
+`python forecast.py --filename data.csv --date_column date --column_to_predict volume`
 
 ## Output
 
