@@ -14,6 +14,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename', help='The file to read')
+parser.add_argument('column_to_predict', help='This is the column in the data containing the volume you wish to predict')
 args = parser.parse_args()
 
 # read the file into a df
@@ -31,7 +32,7 @@ df['date'] = pd.to_datetime(df['date'])
 # group by the date, to aggregate daily
 # and sum the total volumes to get a daily aggregated
 # call volume, ignoring the country split
-df = df.groupby('date').agg({'total_inbound_calls':'sum'}).reset_index()
+df = df.groupby('date').agg({args.column_to_predict:'sum'}).reset_index()
 
 # rename the columns to be accepted by prophet
 df.columns = ['ds','y']
