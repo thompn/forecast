@@ -1,3 +1,4 @@
+import sys
 import warnings
 warnings.simplefilter('ignore')
 
@@ -10,109 +11,113 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-import argparse
-
-parser = argparse.ArgumentParser()
-parser.add_argument('filename', \
-    help='The file to read')
-parser.add_argument('date_column', \
-    help='The name of the date column')
-parser.add_argument('column_to_predict', \
-    help='This is the column in the data containing the volume you wish to predict')
-args = parser.parse_args()
-
-# read the file into a df
-with open(args.filename, 'r') as f:
-    df = pd.read_csv(f)
-
-# import datetime and get todays date in tidy
-# string format yyyy-mm-dd
 from datetime import datetime as dt
+
 tddt = dt.strftime(dt.today(), '%Y-%m-%d')
 
-# transform the date column to a datetime type
-df['date'] = pd.to_datetime(df['date'])
+class Forecaster:
+    def __init__(self, filename, date_column, column_to_predict):
+        self.filename = filename
+        self.date_column = date_column
+        self.column_to_predict = column_to_predict
 
-# group by the date, to aggregate daily
-# and sum the total volumes to get a daily aggregated
-# call volume, ignoring the country split
-df = df.groupby(args.date_column).agg({args.column_to_predict:'sum'}).reset_index()
+    def read_file(self):
+        with open(self.filename, 'r') as f:
+            df = pd.read_csv(f)
+        return df
 
-# rename the columns to be accepted by prophet
-df.columns = ['ds','y']
+    def transform_data(self, df):
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.groupby(self.date_column).agg({self.column_to_predict:'sum'}).reset_index()
+        df.columns = ['ds','y']
+        return df
 
-# instantiate prophet
-m = Prophet()
+    def fit_model(self, df):
+        m = Prophet()
+        model = m.fit(df)
+        return model
 
-# fit the model to the call data in df
-model = m.fit(df)
+    def predict_model(self, model):
+        future = model.make_future_dataframe(periods=365, freq='D')
+        forecast = model.predict(future)
+        return forecast
 
-# use the fitted model to make a prediction +365 periods on a daily basis
-future = m.make_future_dataframe(periods=365, freq='D')
+    def combine_dataframes(self, df, forecast):
+        df_combined = pd.concat([df, forecast], axis=1, join='inner')
+        return df_combined
 
-# predict the forecast and save to forecast df
-forecast = m.predict(future)
+    def calculate_residuals(self, df_combined):
+        residuals = df_combined['y'] - df_combined['yhat']
+        return residuals
 
-# Combine the two dataframes using the 'ds' column as the key
-df_combined = pd.concat([df, forecast], axis=1, join='inner')
+    def calculate_metrics(self, df_combined):
+        mae = mean_absolute_error(df_combined['y'], df_combined['yhat'])
+        mse = mean_squared_error(df_combined['y'], df_combined['yhat'])
+        return mae, mse
 
-# Calculate the residuals by subtracting the predicted values from the actual values
-residuals = df_combined['y'] - df_combined['yhat']
+    def format_forecast_output(self, forecast):
+        to_save = forecast[['ds','yhat']]
+        to_save.columns = ['date','forecast_value']
+        tddt = dt.strftime(dt.today(), '%Y-%m-%d')
+        forecast_ready = to_save[to_save['date'] > tddt]
+        return forecast_ready
 
-# Calculate the MAE and MSE
-mae = mean_absolute_error(df_combined['y'], df_combined['yhat'])
-mse = mean_squared_error(df_combined['y'], df_combined['yhat'])
+    def save_forecast_output(self, forecast_ready):
+        forecast_ready.to_csv(f'forecast_output_{tddt}.csv')
 
-# filter only date and volumes to output
-to_save = forecast[['ds','yhat']]
-to_save.columns = ['date','forecast_value']
+    def save_plots(self, model, forecast, forecast_ready, residuals):
+        with PdfPages(f'forecast_{tddt}_plots.pdf') as pdf:
+            fig, ax = plt.subplots(figsize=(18,5))
+            ax.plot(df['ds'], df['y'])
+            plt.xlabel('Date', fontsize=14)
+            plt.ylabel('Volume', fontsize=14)
+            plt.title('Total Actual Volumes - Aggregated Daily - Used to Predict', fontsize=16)
+            pdf.savefig()  # saves the current figure into a pdf page
+            plt.close()
 
-# start forecast output from tomorrow
-forecast_ready = to_save[to_save['date'] > tddt]
+            fig, ax2 = plt.subplots(figsize=(18,8))
+            model.plot(forecast, ax=ax2 )
+            a = add_changepoints_to_plot(fig.gca(), model, forecast)
+            plt.xlabel('Date', fontsize=14)
+            plt.ylabel('Forecasted Volume', fontsize=14)
+            plt.title('Aggregated Forecasted Volume', fontsize=16)
+            plt.tight_layout()
+            pdf.savefig()  # saves the current figure into a pdf page
+            plt.close()
 
-# save forecast output to csv file
-forecast_ready.to_csv(f'forecast_output_{tddt}.csv')
+            model.plot_components(forecast)
+            plt.tight_layout()
+            plt.title('Components')
+            pdf.savefig()  # saves the current figure into a pdf page
+            plt.close()
 
-# Create a PDF file to add plots to
-with PdfPages(f'forecast_{tddt}_plots.pdf') as pdf:
-    fig, ax = plt.subplots(figsize=(18,5))
-    ax.plot(df['ds'], df['y'])
-    plt.xlabel('Date', fontsize=14)
-    plt.ylabel('Volume', fontsize=14)
-    plt.title('Total Actual Volumes - Aggregated Daily - Used to Predict', fontsize=16)
-    pdf.savefig()  # saves the current figure into a pdf page
-    plt.close()
-    
-    fig, ax2 = plt.subplots(figsize=(18,8))
-    m.plot(forecast, ax=ax2 )
-    a = add_changepoints_to_plot(fig.gca(), m, forecast)
-    plt.xlabel('Date', fontsize=14)
-    plt.ylabel('Forecasted Volume', fontsize=14)
-    plt.title('Aggregated Forecasted Volume', fontsize=16)
-    plt.tight_layout()
-    pdf.savefig()  # saves the current figure into a pdf page
-    plt.close()
-    
-    m.plot_components(forecast)
-    plt.tight_layout()
-    pdf.savefig()  # saves the current figure into a pdf page
-    plt.close()
-    
-    fig, ax = plt.subplots(figsize=(18,8))
-    ax.plot(forecast_ready['date'], forecast_ready['forecast_value'])
-    plt.xlabel('Date', fontsize=14)
-    plt.ylabel('Forecasted Volume', fontsize=14)
-    plt.title('Aggregated Forecasted Volume', fontsize=16)
-    plt.tight_layout()
-    pdf.savefig()  # saves the current figure into a pdf page
-    plt.close()
+            fig, ax = plt.subplots(figsize=(18,8))
+            ax.plot(forecast_ready['date'], forecast_ready['forecast_value'])
+            plt.xlabel('Date', fontsize=14)
+            plt.ylabel('Forecasted Volume', fontsize=14)
+            plt.title('Aggregated Forecasted Volume', fontsize=16)
+            plt.tight_layout()
+            pdf.savefig()  # saves the current figure into a pdf page
+            plt.close()
 
-    plt.plot(residuals)
-    plt.tight_layout()
-    plt.title('Residuals')
-    pdf.savefig()  # saves the current figure into a pdf page
-    plt.close()
+            plt.plot(residuals)
+            plt.tight_layout()
+            plt.title('Residuals')
+            pdf.savefig()  # saves the current figure into a pdf page
+            plt.close()
 
-# print the evaluation metrics
-print(f'MAE: {mae}')
-print(f'RMSE: {mse}')
+if __name__ == "__main__":
+    filename, date_column, column_to_predict = sys.argv[1], sys.argv[2], sys.argv[3]
+    forecaster = Forecaster(filename, date_column, column_to_predict)
+    df = forecaster.read_file()
+    df = forecaster.transform_data(df)
+    model = forecaster.fit_model(df)
+    forecast = forecaster.predict_model(model)
+    df_combined = forecaster.combine_dataframes(df, forecast)
+    residuals = forecaster.calculate_residuals(df_combined)
+    mae, mse = forecaster.calculate_metrics(df_combined)
+    forecast_ready = forecaster.format_forecast_output(forecast)
+    forecaster.save_forecast_output(forecast_ready)
+    forecaster.save_plots(model, forecast, forecast_ready, residuals)
+    print(f'MAE: {mae}')
+    print(f'RMSE: {mse}')
