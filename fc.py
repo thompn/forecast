@@ -14,6 +14,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename', help='The file to read')
+parser.add_argument('date_column', help='The name of the date column')
 parser.add_argument('column_to_predict', help='This is the column in the data containing the volume you wish to predict')
 args = parser.parse_args()
 
@@ -32,7 +33,7 @@ df['date'] = pd.to_datetime(df['date'])
 # group by the date, to aggregate daily
 # and sum the total volumes to get a daily aggregated
 # call volume, ignoring the country split
-df = df.groupby('date').agg({args.column_to_predict:'sum'}).reset_index()
+df = df.groupby(args.date).agg({args.column_to_predict:'sum'}).reset_index()
 
 # rename the columns to be accepted by prophet
 df.columns = ['ds','y']
@@ -61,6 +62,7 @@ mse = mean_squared_error(df_combined['y'], df_combined['yhat'])
 
 # filter only date and volumes to output
 to_save = forecast[['ds','yhat']]
+to_save.columns = ['date','forecast_value']
 
 # start forecast output from tomorrow
 forecast_ready = to_save[to_save['ds'] > tddt]
