@@ -13,9 +13,12 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('filename', help='The file to read')
-parser.add_argument('date_column', help='The name of the date column')
-parser.add_argument('column_to_predict', help='This is the column in the data containing the volume you wish to predict')
+parser.add_argument('filename', \
+    help='The file to read')
+parser.add_argument('date_column', \
+    help='The name of the date column')
+parser.add_argument('column_to_predict', \
+    help='This is the column in the data containing the volume you wish to predict')
 args = parser.parse_args()
 
 # read the file into a df
