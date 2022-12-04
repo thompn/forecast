@@ -29,7 +29,7 @@ tddt = dt.strftime(dt.today(), '%Y-%m-%d')
 df['date'] = pd.to_datetime(df['date'])
 
 # group by the date, to aggregate daily
-# and sum the total calls to get a daily aggregated
+# and sum the total volumes to get a daily aggregated
 # call volume, ignoring the country split
 df = df.groupby('date').agg({'total_inbound_calls':'sum'}).reset_index()
 
