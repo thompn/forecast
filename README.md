@@ -23,17 +23,26 @@ First set up your virtual environment. Copy the following code into a terminal:
 
 `pip install -r requirements.txt`
 
-Now you're ready to run, use the following command to run the forecast:
+Now make sure you have a csv file in the same directory as the python file. This csv file can include any number of columns, but it **must** include the following columns:
+`date` (a column of dates)
+`volume_to_predict` (this can have any name, and can be specified in the
+ arguments passed when running the python script)
+ 
+__Now you're ready to run, use the following command to run the forecast:__
 
-`python main.py filename column_to_predict`
+`python fc.py filename.csv date_column column_to_predict`
 
-where `filename` is the path to the csv file containing the data to be used to make the forecast. The file should contain a `date` column with dates in `yyyy-mm-dd` format and a `volume` column with the value you wish to predict.
+where `filename.csv` is the path to the csv file containing the data to be used to make the forecast, `date_column` is the name of the date column in your input data, and `column_to_predict` is the name of the column containing the values you wish to predict.
+
+For example if your csv file is called `sales.csv` and has the columns `date` and `sales_volume` then you would run as: 
+
+`python fc.py sales.csv date sales_volume`
 
 ## Output
 
 The code will output two files:
 
--   `forecast_output_yyyy-mm-dd.csv`: a csv file containing the forecasted total inbound volumes for each day starting from the day after the last day in the input data.
+-   `forecast_output_yyyy-mm-dd.csv`: a csv file containing the forecasted total  volumes for each day starting from the day after the last day in the input data.
 -   `forecast_yyyy-mm-dd_plots.pdf`: a pdf file containing four plots:
     -   A plot of the actual total volumes used to make the forecast.
     -   A plot of the forecasted total volumes.
