@@ -6,6 +6,10 @@ import unittest
 from fc import Forecaster
 import pandas as pd
 from prophet import Prophet
+from datetime import datetime as dt
+
+#assign today's date to a variable
+tddt = dt.strftime(dt.today(), '%Y-%m-%d')
 
 class TestForecaster(unittest.TestCase):
 
@@ -88,7 +92,7 @@ class TestForecaster(unittest.TestCase):
         forecast = self.forecaster.predict_model(model)
         forecast_ready = self.forecaster.format_forecast_output(forecast)
         self.forecaster.save_forecast_output(forecast_ready)
-        self.assertTrue(os.path.exists('forecast_output_tddt.csv'))
+        self.assertTrue(os.path.exists(f'forecast_output_{tddt}'))
 
     def test_save_plots(self):
         df = self.forecaster.read_file()
@@ -99,7 +103,7 @@ class TestForecaster(unittest.TestCase):
         residuals = self.forecaster.calculate_residuals(df_combined)
         forecast_ready = self.forecaster.format_forecast_output(forecast)
         self.forecaster.save_plots(model, forecast, forecast_ready, residuals)
-        self.assertTrue(os.path.exists('forecast_tddt_plots.pdf'))
+        self.assertTrue(os.path.exists(f'forecast_{tddt}_plots.pdf'))
 
 if __name__ == '__main__':
     unittest.main()
